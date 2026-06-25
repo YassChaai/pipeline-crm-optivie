@@ -1,0 +1,11 @@
+[project]
+name = "pipeline-optivie"
+version = "1.0.0"
+description = "Pipeline CRM Optivie - Livrable 4, prototype fonctionnel (Groupe 7)"
+requires-python = ">=3.10"
+dependencies = [
+    "streamlit>=1.40",
+    "pandas>=2.0",
+    "openpyxl>=3.1",
+    "watchdog>=6.0.0",
+]
