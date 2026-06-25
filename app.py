@@ -269,7 +269,7 @@ CSS = """
 .board::-webkit-scrollbar-track {background:transparent;}
 
 /* ---- Onglet equipe : cartes courtier ---- */
-.grid {display:flex; flex-wrap:wrap; gap:14px; margin-top:6px;}
+.grid {display:flex; flex-wrap:wrap; gap:14px; margin:6px 0 18px;}
 .bcard {flex:1 1 290px; max-width:430px; background:#FFFFFF; border:1px solid #E9EDF2;
         border-left:4px solid #6E86A6; border-radius:16px; padding:15px 18px;
         box-shadow:0 1px 2px rgba(16,32,56,0.04);}
@@ -292,7 +292,8 @@ CSS = """
 
 /* ---- Onglet equipe : graphes en carte ---- */
 [data-testid="stVegaLiteChart"] {background:#FFFFFF; border:1px solid #E9EDF2; border-radius:16px;
-        padding:16px 18px 12px; box-shadow:0 1px 2px rgba(16,32,56,0.04); box-sizing:border-box;}
+        padding:16px 18px 12px; box-shadow:0 1px 2px rgba(16,32,56,0.04); box-sizing:border-box;
+        margin-bottom:14px;}
 [data-testid="stVegaLiteChart"] canvas, [data-testid="stVegaLiteChart"] svg {border-radius:8px;}
 
 /* ---- Onglet equipe : cartes d'action ---- */
