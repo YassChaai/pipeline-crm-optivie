@@ -434,12 +434,22 @@ def main():
         unsafe_allow_html=True)
 
     # ---- Barre laterale, filtres de demo ----
+    en_cours = leads[leads["Statut lead"] == "En cours"]
+    relances_dispo = sorted(int(x) for x in en_cours["Nb relances"].dropna().unique())
+    dmax = en_cours["delai_h"].max()
+    delai_max = int(dmax) if pd.notna(dmax) else 48
     with st.sidebar:
         st.header("Filtres")
         f_courtiers = st.multiselect("Courtier", sorted(leads["Courtier attribué"].unique()),
                                      placeholder="Tous les courtiers")
         f_canaux = st.multiselect("Canal", CANAUX, placeholder="Tous les canaux")
-        haute_seule = st.toggle("Pile haute seulement")
+        f_prio = st.multiselect("Priorite", ["Haute", "Moyenne", "Rapide"],
+                                placeholder="Toutes les priorites")
+        f_etapes = st.multiselect("Etape du funnel", STAGES, placeholder="Toutes les etapes")
+        f_relances = st.multiselect("Nombre de relances", relances_dispo,
+                                    placeholder="Tous", format_func=lambda x: f"{x} relance(s)")
+        f_delai = st.slider("Delai de 1er contact au-dela de (h)", 0, delai_max, 0)
+        hors_crm = st.toggle("Hors CRM seulement")
         st.divider()
         st.caption(f"SLA lead lent : au-dela de {SLA_LENT_H}h · "
                    f"Commission recurrente : {COMMISSION} € par contrat")
@@ -473,8 +483,16 @@ def main():
             vue = vue[vue["Courtier attribué"].isin(f_courtiers)]
         if f_canaux:
             vue = vue[vue["canal"].isin(f_canaux)]
-        if haute_seule:
-            vue = vue[vue["priorite"] == "Haute"]
+        if f_prio:
+            vue = vue[vue["priorite"].isin(f_prio)]
+        if f_etapes:
+            vue = vue[vue["etape"].isin(f_etapes)]
+        if f_relances:
+            vue = vue[vue["Nb relances"].isin(f_relances)]
+        if f_delai > 0:
+            vue = vue[vue["delai_h"] >= f_delai]
+        if hors_crm:
+            vue = vue[vue["Dans CRM"] == "Non"]
 
         # Legende des priorites
         st.markdown(
