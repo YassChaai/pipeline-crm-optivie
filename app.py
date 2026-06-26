@@ -19,7 +19,6 @@ Chaque chiffre affiche est calcule depuis le dataset, jamais en dur.
 """
 
 from pathlib import Path
-from urllib.parse import quote
 import pandas as pd
 import numpy as np
 import altair as alt
@@ -219,8 +218,8 @@ CSS = """
 
 /* ---- Board kanban ---- */
 .board {display:flex; align-items:flex-start; gap:11px; overflow-x:auto; padding:2px 1px 12px;}
-.lane {flex:1 1 0; min-width:190px; background:#ECEFF4; border-radius:16px; padding:12px 11px 6px;}
-.lane.empty {flex:0 0 108px; min-width:108px; background:#EFF1F5;}
+.lane {background:#ECEFF4; border-radius:16px; padding:12px 11px 6px;}
+.lane.empty {background:#EFF1F5;}
 .lane-head {margin-bottom:12px;}
 .lane-title {display:flex; justify-content:space-between; align-items:center; font-weight:700;
              color:#2B3A4B; font-size:0.80rem;}
@@ -236,6 +235,13 @@ CSS = """
             text-decoration:none; background:#FFFFFF; border:1px solid #DCE3EC; border-radius:9px;
             padding:7px 6px; margin:2px 2px 9px; cursor:pointer; transition:background .12s ease;}
 .lane-more:hover {background:#EAF0F6; border-color:#C3D0DF; color:#27496D;}
+/* Bouton natif tout voir / reduire, sous chaque colonne */
+.stButton {margin-top:-6px;}
+.stButton > button {width:100%; background:#FFFFFF; color:#3D5675; border:1px solid #DCE3EC;
+        border-radius:9px; font-size:0.72rem; font-weight:700; padding:6px 6px; min-height:0;
+        box-shadow:none;}
+.stButton > button:hover {background:#EAF0F6; border-color:#C3D0DF; color:#27496D;}
+.stButton > button:focus:not(:active) {color:#27496D; border-color:#C3D0DF;}
 
 /* ---- Carte lead ---- */
 .card {position:relative; background:#FFFFFF; border:1px solid #EDF0F4; border-radius:13px;
@@ -394,9 +400,9 @@ def carte_lead(row, cible_alloc):
 
 
 def lane_html(etape, sous, cible, max_cartes, largeur_bar, deplie=False):
-    """Construit une colonne (lane) du board : en-tete avec compteur et barre de
-    volume, puis les cartes, en un seul bloc HTML. Le pied de colonne est un lien
-    cliquable qui deplie l'etape (via un parametre d'URL) ou la replie."""
+    """En-tete (compteur, barre de volume) puis les cartes, en un bloc HTML. Le
+    bouton tout voir / reduire est un bouton Streamlit natif, rendu sous la colonne,
+    pour garder les filtres et permettre plusieurs colonnes depliees a la fois."""
     n = len(sous)
     vide = " empty" if n == 0 else ""
     tete = (f"<div class='lane-head'><div class='lane-title'><span>{etape}</span>"
@@ -407,12 +413,13 @@ def lane_html(etape, sous, cible, max_cartes, largeur_bar, deplie=False):
     else:
         montre = n if deplie else max_cartes
         corps = "".join(carte_lead(r, cible) for _, r in sous.head(montre).iterrows())
-        if deplie and n > max_cartes:
-            corps += "<a class='lane-more' href='?' target='_self'>Reduire</a>"
-        elif n > max_cartes:
-            corps += (f"<a class='lane-more' href='?detail={quote(etape)}' "
-                      f"target='_self'>+ {n - max_cartes} autres, tout voir</a>")
     return f"<div class='lane{vide}'>{tete}{corps}</div>"
+
+
+def _basculer_colonne(stage):
+    """Bascule l'etat deplie/replie d'une colonne, conserve entre les reruns."""
+    cle = f"open_{stage}"
+    st.session_state[cle] = not st.session_state.get(cle, False)
 
 
 def main():
@@ -502,7 +509,10 @@ def main():
             "<span class='lg'><span class='dot' style='background:#6E86A6'></span>Rapide</span></div>",
             unsafe_allow_html=True)
 
-        # Board kanban des six etapes, en un seul bloc HTML (lanes a defilement horizontal).
+        # Board kanban des six etapes. Chaque colonne est une vraie colonne Streamlit,
+        # avec un bouton natif tout voir / reduire en bas. L'etat de chaque colonne est
+        # garde dans st.session_state, donc les filtres restent et plusieurs colonnes
+        # peuvent etre depliees en meme temps.
         # Tri une fois : priorite, puis retard decroissant dans la pile haute.
         ordre_prio = {"Haute": 0, "Moyenne": 1, "Rapide": 2, "Historique": 3}
         vue = vue.copy()
@@ -510,13 +520,17 @@ def main():
         vue = vue.sort_values(["_p", "delai_h"], ascending=[True, False])
         comptes = {s: int((vue["etape"] == s).sum()) for s in STAGES}
         mx = max(comptes.values()) or 1
-        detail = st.query_params.get("detail")   # etape depliee via clic sur le pied de colonne
-        lanes = "".join(
-            lane_html(s, vue[vue["etape"] == s], cible, CARTES_PAR_COLONNE,
-                      int(round(100 * comptes[s] / mx)), deplie=(detail == s))
-            for s in STAGES
-        )
-        st.markdown(f"<div class='board'>{lanes}</div>", unsafe_allow_html=True)
+        poids = [2.0 if comptes[s] > 0 else 1.0 for s in STAGES]
+        for col, s in zip(st.columns(poids, gap="small"), STAGES):
+            with col:
+                n = comptes[s]
+                ouvert = st.session_state.get(f"open_{s}", False)
+                st.markdown(lane_html(s, vue[vue["etape"] == s], cible, CARTES_PAR_COLONNE,
+                                      int(round(100 * n / mx)), deplie=ouvert),
+                            unsafe_allow_html=True)
+                if n > CARTES_PAR_COLONNE:
+                    label = "Reduire" if ouvert else f"+ {n - CARTES_PAR_COLONNE} autres, tout voir"
+                    st.button(label, key=f"voir_{s}", on_click=_basculer_colonne, args=(s,))
 
         with st.expander("Methode et provenance des chiffres"):
             st.markdown(
