@@ -236,10 +236,12 @@ CSS = """
             padding:7px 6px; margin:2px 2px 9px; cursor:pointer; transition:background .12s ease;}
 .lane-more:hover {background:#EAF0F6; border-color:#C3D0DF; color:#27496D;}
 /* Bouton natif tout voir / reduire, sous chaque colonne */
-.stButton {margin-top:-6px;}
-.stButton > button {width:100%; background:#FFFFFF; color:#3D5675; border:1px solid #DCE3EC;
-        border-radius:9px; font-size:0.72rem; font-weight:700; padding:6px 6px; min-height:0;
-        box-shadow:none;}
+[data-testid="stElementContainer"]:has([data-testid="stButton"]) {
+        width:100% !important; display:flex !important; justify-content:center !important;}
+[data-testid="stButton"] {margin-top:6px;}
+.stButton > button {display:block; width:fit-content; margin:0 auto; background:#FFFFFF;
+        color:#3D5675; border:1px solid #DCE3EC; border-radius:9px; font-size:0.72rem;
+        font-weight:700; padding:6px 16px; min-height:0; box-shadow:none;}
 .stButton > button:hover {background:#EAF0F6; border-color:#C3D0DF; color:#27496D;}
 .stButton > button:focus:not(:active) {color:#27496D; border-color:#C3D0DF;}
 
