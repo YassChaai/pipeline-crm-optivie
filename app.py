@@ -424,6 +424,14 @@ def _basculer_colonne(stage):
     st.session_state[cle] = not st.session_state.get(cle, False)
 
 
+def _reset_filtres():
+    """Vide tous les filtres d'un coup, retour aux valeurs par defaut."""
+    for cle in ("f_courtiers", "f_canaux", "f_prio", "f_etapes", "f_relances"):
+        st.session_state[cle] = []
+    st.session_state["f_delai"] = 0
+    st.session_state["f_hors_crm"] = False
+
+
 def main():
     st.set_page_config(page_title="Pipeline CRM Optivie", layout="wide",
                        initial_sidebar_state="expanded")
@@ -450,15 +458,17 @@ def main():
     with st.sidebar:
         st.header("Filtres")
         f_courtiers = st.multiselect("Courtier", sorted(leads["Courtier attribué"].unique()),
-                                     placeholder="Tous les courtiers")
-        f_canaux = st.multiselect("Canal", CANAUX, placeholder="Tous les canaux")
+                                     placeholder="Tous les courtiers", key="f_courtiers")
+        f_canaux = st.multiselect("Canal", CANAUX, placeholder="Tous les canaux", key="f_canaux")
         f_prio = st.multiselect("Priorite", ["Haute", "Moyenne", "Rapide"],
-                                placeholder="Toutes les priorites")
-        f_etapes = st.multiselect("Etape du funnel", STAGES, placeholder="Toutes les etapes")
-        f_relances = st.multiselect("Nombre de relances", relances_dispo,
-                                    placeholder="Tous", format_func=lambda x: f"{x} relance(s)")
-        f_delai = st.slider("Delai de 1er contact au-dela de (h)", 0, delai_max, 0)
-        hors_crm = st.toggle("Hors CRM seulement")
+                                placeholder="Toutes les priorites", key="f_prio")
+        f_etapes = st.multiselect("Etape du funnel", STAGES, placeholder="Toutes les etapes",
+                                  key="f_etapes")
+        f_relances = st.multiselect("Nombre de relances", relances_dispo, placeholder="Tous",
+                                    format_func=lambda x: f"{x} relance(s)", key="f_relances")
+        f_delai = st.slider("Delai de 1er contact au-dela de (h)", 0, delai_max, key="f_delai")
+        hors_crm = st.toggle("Hors CRM seulement", key="f_hors_crm")
+        st.button("Reinitialiser les filtres", on_click=_reset_filtres)
         st.divider()
         st.caption(f"SLA lead lent : au-dela de {SLA_LENT_H}h · "
                    f"Commission recurrente : {COMMISSION} € par contrat")
